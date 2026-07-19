@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+body {
+  @apply bg-white text-slate-700 antialiased dark:bg-slate-950 dark:text-slate-300;
+}
+
+/* Selection */
+::selection {
+  @apply bg-brand-500/20;
+}
+
+/* Thin scrollbars for the sidebar */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+/* Reusable content typography for docs pages */
+.prose-doc h2 {
+  @apply mt-12 scroll-mt-24 border-b border-slate-200 pb-2 text-2xl font-semibold tracking-tight text-slate-900 first:mt-0 dark:border-slate-800 dark:text-white;
+}
+.prose-doc h3 {
+  @apply mt-8 scroll-mt-24 text-lg font-semibold tracking-tight text-slate-900 dark:text-white;
+}
+.prose-doc p {
+  @apply mt-4 leading-7;
+}
+.prose-doc ul {
+  @apply mt-4 list-disc space-y-2 pl-6 leading-7 marker:text-brand-500;
+}
+.prose-doc a {
+  @apply font-medium text-brand-600 underline underline-offset-4 hover:text-brand-500 dark:text-brand-400;
+}
+.prose-doc strong {
+  @apply font-semibold text-slate-900 dark:text-white;
+}
+.prose-doc code:not(pre code) {
+  @apply rounded-md border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-[0.85em] text-slate-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200;
+}
+
+/* Shiki syntax-highlighted code blocks */
+.shiki-block .shiki {
+  margin: 0;
+  padding: 1rem;
+  background-color: transparent !important;
+  overflow-x: auto;
+}
+.shiki-block .shiki code {
+  font-family: inherit;
+  background: transparent;
+  counter-reset: step;
+}
