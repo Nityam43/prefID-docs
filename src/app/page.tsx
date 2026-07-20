@@ -8,6 +8,19 @@ const heroExample = `import { id } from "prefid";
 id("user");   // => "user_a8Kd0f2bQ1nR7pZ3xW4mT6y"
 id("order");  // => "order_9f8e7d6c5b4a3F2e1D0cB9aX"`;
 
+async function getLatestVersion(): Promise<string | null> {
+  try {
+    const res = await fetch("https://registry.npmjs.org/prefid/latest", {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { version?: string };
+    return data.version ?? null;
+  } catch {
+    return null;
+  }
+}
+
 const features = [
   {
     title: "Self-describing",
@@ -35,7 +48,9 @@ const features = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const version = await getLatestVersion();
+
   return (
     <main>
       {/* Hero */}
@@ -50,7 +65,7 @@ export default function HomePage() {
               className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 shadow-sm transition hover:border-brand-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
             >
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-500" />
-              v0.1.1 · Zero dependencies
+              {version ? `v${version} · ` : ""}Zero dependencies
             </a>
 
             <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-slate-900 sm:text-6xl dark:text-white">
