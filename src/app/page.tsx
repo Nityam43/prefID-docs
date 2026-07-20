@@ -3,6 +3,8 @@ import { CodeBlock } from "@/components/CodeBlock";
 import { ArrowRightIcon, GitHubIcon } from "@/components/icons";
 import { GITHUB_URL, NPM_URL } from "@/lib/nav";
 
+//lol
+
 const heroExample = `import { id } from "prefid";
 
 id("user");   // => "user_a8Kd0f2bQ1nR7pZ3xW4mT6y"
