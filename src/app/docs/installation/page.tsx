@@ -44,8 +44,8 @@ export default function InstallationPage() {
         <h2>Requirements</h2>
         <ul>
           <li>
-            <strong>Node.js 18+</strong>, or any modern browser, Deno, Bun, or
-            edge runtime.
+            <strong>Node.js 14.18+</strong>, or any modern browser, Deno, Bun,
+            or edge runtime.
           </li>
           <li>
             <strong>TypeScript</strong> is optional — the package works in plain

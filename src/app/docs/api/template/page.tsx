@@ -126,8 +126,10 @@ export default function TemplatePage() {
             <strong>
               <code>RangeError</code>
             </strong>{" "}
-            — the pattern has no placeholder, the placeholder isn&apos;t a single
-            character, or the alphabet has fewer than 2 characters.
+            — the pattern has no placeholder, has more than 4096 placeholders,
+            the placeholder isn&apos;t a single character, or the alphabet has
+            fewer than 2 characters. The placeholder cap guards against a huge
+            pattern exhausting memory when it comes from untrusted input.
           </li>
         </ul>
 

@@ -64,7 +64,9 @@ export default function CreateIdPage() {
                 </td>
                 <td className="py-2 pr-4 font-mono">number</td>
                 <td className="py-2 pr-4 font-mono">24</td>
-                <td className="py-2">Number of random characters.</td>
+                <td className="py-2">
+                  Number of random characters (1&ndash;4096).
+                </td>
               </tr>
               <tr className="border-b border-slate-100 dark:border-slate-800/60">
                 <td className="py-2 pr-4 font-mono text-slate-900 dark:text-slate-200">
@@ -104,9 +106,11 @@ export default function CreateIdPage() {
         <h2>Notes</h2>
         <ul>
           <li>
-            <code>size</code> must be a positive integer, and{" "}
+            <code>size</code> must be an integer between 1 and 4096, and{" "}
             <code>alphabet</code> must contain at least 2 characters — otherwise{" "}
-            <code>createId</code> throws a <code>RangeError</code>.
+            <code>createId</code> throws a <code>RangeError</code>. The upper
+            bound guards against a huge <code>size</code> exhausting memory when
+            the value comes from untrusted input.
           </li>
           <li>
             A larger <code>size</code> or <code>alphabet</code> means more
