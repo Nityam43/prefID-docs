@@ -81,7 +81,7 @@ export default async function HomePage() {
               Short, unique IDs that carry a prefix telling you what they belong
               to — <code className="font-mono text-slate-900 dark:text-slate-200">user_a1b2c3</code>,{" "}
               <code className="font-mono text-slate-900 dark:text-slate-200">order_9f8e7d</code>. Readable,
-              secure, and understood by TypeScript.
+              secure, and typed — for TypeScript and JavaScript alike.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
