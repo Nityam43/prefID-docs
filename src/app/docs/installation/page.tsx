@@ -41,6 +41,28 @@ export default function InstallationPage() {
         <h3>CommonJS</h3>
         <CodeBlock code={cjs} lang="js" />
 
+        <h2>JavaScript or TypeScript</h2>
+        <p>
+          prefID works in <strong>plain JavaScript</strong> exactly as well as
+          in TypeScript. The published package is already compiled JavaScript,
+          so there is nothing to compile on your end — every function (
+          <code>id</code>, <code>createId</code>, <code>template</code>,{" "}
+          <code>ensureUnique</code>, <code>isId</code>, <code>getPrefix</code>)
+          runs the same in a <code>.js</code> file.
+        </p>
+        <p>
+          TypeScript users get one bonus on top: the typed prefix (
+          <code>
+            {"`"}
+            user_{"${string}"}
+            {"`"}
+          </code>
+          ) catches wrong-ID mistakes at compile time. JavaScript users still get
+          editor autocomplete from the bundled type definitions — they just
+          don&apos;t get compile-time checking, because JavaScript has no compile
+          step.
+        </p>
+
         <h2>Requirements</h2>
         <ul>
           <li>
