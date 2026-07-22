@@ -26,6 +26,10 @@ export const nav: NavGroup[] = [
     ],
   },
   {
+    title: "Guides",
+    links: [{ title: "Recipes", href: "/docs/recipes" }],
+  },
+  {
     title: "Concepts",
     links: [
       { title: "Uniqueness & Collisions", href: "/docs/uniqueness" },
