@@ -52,6 +52,11 @@ body {
   @apply rounded-md border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-[0.85em] text-slate-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200;
 }
 
+/* Dismissible announcement banner (driven by html[data-banner]) */
+html[data-banner="hidden"] .announcement-banner {
+  display: none;
+}
+
 /* TS / JS code language toggle (driven by html[data-lang]) */
 .lang-variant--js {
   display: none;

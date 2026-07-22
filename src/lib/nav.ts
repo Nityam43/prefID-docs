@@ -32,6 +32,10 @@ export const nav: NavGroup[] = [
       { title: "Comparison", href: "/docs/comparison" },
     ],
   },
+  {
+    title: "Ecosystem",
+    links: [{ title: "Zod (prefID-zod)", href: "/docs/zod" }],
+  },
 ];
 
 /** Flat, ordered list of every doc page — used for prev/next navigation. */

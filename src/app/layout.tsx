@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { Navbar } from "@/components/Navbar";
 
 export const metadata: Metadata = {
@@ -15,6 +16,8 @@ const themeScript = `(function(){try{var t=localStorage.getItem('theme');var m=w
 
 const langScript = `(function(){try{var l=localStorage.getItem('prefid-lang');document.documentElement.dataset.lang=(l==='js')?'js':'ts';}catch(e){document.documentElement.dataset.lang='ts';}})();`;
 
+const bannerScript = `(function(){try{if(localStorage.getItem('prefid-banner-sortable-ids')==='dismissed'){document.documentElement.dataset.banner='hidden';}}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: {
@@ -25,8 +28,10 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: langScript }} />
+        <script dangerouslySetInnerHTML={{ __html: bannerScript }} />
       </head>
       <body className="min-h-screen font-sans">
+        <AnnouncementBanner />
         <Navbar />
         {children}
       </body>
