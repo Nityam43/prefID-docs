@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 
 export const metadata = { title: "template()" };
 
+//lol
 const basic = `import { template } from "prefid";
 
 const userId = template("user_########");
