@@ -33,6 +33,10 @@ const features = [
     body: "id(\"user\") is typed as `user_${string}`, so mixing up ID types is a compile error.",
   },
   {
+    title: "Sortable option",
+    body: "sortableId() embeds a time component so IDs sort chronologically — ULID / UUIDv7-style.",
+  },
+  {
     title: "Secure",
     body: "The random part uses the platform's cryptographic RNG — never Math.random().",
   },

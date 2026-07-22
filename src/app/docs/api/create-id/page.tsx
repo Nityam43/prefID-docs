@@ -26,6 +26,13 @@ const id = createId({ alphabet: "23456789abcdefghjkmnpqrstuvwxyz" });
 
 id("code"); // => "code_mn7pqr2stuv9wxyz34abcdef"`;
 
+const preset = `import { createId, BASE32_CROCKFORD } from "prefid";
+
+// Crockford Base32 (the ULID alphabet): omits I, L, O, U.
+const id = createId({ alphabet: BASE32_CROCKFORD });
+
+id("code"); // => "code_MN7PQR2STVWXYZ34ABCDEFGH" — no 0/O or 1/l confusion"`;
+
 export default function CreateIdPage() {
   return (
     <>
@@ -102,6 +109,14 @@ export default function CreateIdPage() {
           look-alike characters for human-friendly codes.
         </p>
         <CodeBlock code={alphabet} />
+        <p>
+          For a ready-made unambiguous, case-insensitive alphabet, import the{" "}
+          <code>BASE32_CROCKFORD</code> preset — the same alphabet ULID uses. It
+          drops the ambiguous letters <code>I</code>, <code>L</code>,{" "}
+          <code>O</code>, and <code>U</code>, so ids are safe to read aloud,
+          print, or store in case-folding systems.
+        </p>
+        <CodeBlock code={preset} />
 
         <h2>Notes</h2>
         <ul>

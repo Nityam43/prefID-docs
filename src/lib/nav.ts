@@ -18,6 +18,7 @@ export const nav: NavGroup[] = [
     links: [
       { title: "id()", href: "/docs/api/id" },
       { title: "createId()", href: "/docs/api/create-id" },
+      { title: "sortableId()", href: "/docs/api/sortable-id" },
       { title: "template()", href: "/docs/api/template" },
       { title: "ensureUnique()", href: "/docs/api/ensure-unique" },
       { title: "isId() & getPrefix()", href: "/docs/api/validation" },

@@ -19,16 +19,17 @@ first time they appear and collected in the [Glossary](#glossary) at the end.
 5. [Deep dive: randomness](#5-deep-dive-randomness)
 6. [Deep dive: type safety](#6-deep-dive-type-safety)
 7. [Deep dive: uniqueness & collisions](#7-deep-dive-uniqueness--collisions)
-8. [Deep dive: cross-runtime compatibility](#8-deep-dive-cross-runtime-compatibility)
-9. [Build & packaging](#9-build--packaging)
-10. [Testing strategy](#10-testing-strategy)
-11. [CI/CD & publishing](#11-cicd--publishing)
-12. [Security considerations](#12-security-considerations)
-13. [Design decisions & trade-offs](#13-design-decisions--trade-offs)
-14. [Comparison with alternatives](#14-comparison-with-alternatives)
-15. [Known limitations & future work](#15-known-limitations--future-work)
-16. [Interview Q&A](#16-interview-qa)
-17. [Glossary](#glossary)
+8. [Deep dive: sortable IDs](#8-deep-dive-sortable-ids)
+9. [Deep dive: cross-runtime compatibility](#9-deep-dive-cross-runtime-compatibility)
+10. [Build & packaging](#10-build--packaging)
+11. [Testing strategy](#11-testing-strategy)
+12. [CI/CD & publishing](#12-cicd--publishing)
+13. [Security considerations](#13-security-considerations)
+14. [Design decisions & trade-offs](#14-design-decisions--trade-offs)
+15. [Comparison with alternatives](#15-comparison-with-alternatives)
+16. [Known limitations & future work](#16-known-limitations--future-work)
+17. [Interview Q&A](#17-interview-qa)
+18. [Glossary](#glossary)
 
 ---
 
@@ -48,7 +49,9 @@ Three properties define it:
   source, and the package runs on Node, browsers, Deno, Bun, and edge runtimes
   with **zero runtime dependencies**.
 
-It is conceptually **nanoid’s randomness + a prefix + TypeScript types**.
+It is conceptually **nanoid’s randomness + a prefix + TypeScript types**, with an
+optional **sortable** mode (`sortableId`) that adds a time component in the
+spirit of ULID and UUIDv7 (see [§8](#8-deep-dive-sortable-ids)).
 
 ---
 
@@ -74,12 +77,16 @@ prefID fixes both: a readable prefix **and** a type that encodes that prefix.
 | --- | --- |
 | `id(prefix)` | Generate a prefixed ID with default options. |
 | `createId(options?)` | Build a generator with fixed `size` / `separator` / `alphabet`. |
+| `sortableId(prefix)` | Generate a **time-ordered** prefixed ID (ULID/UUIDv7-style). |
+| `createSortableId(options?)` | Build a sortable generator (`randomSize`, `timestampSize`, `monotonic`, `now`, …). |
+| `getTimestamp(id, options?)` | Decode the millisecond timestamp from a sortable ID, or `undefined`. |
 | `template(pattern, options?)` | Generate IDs from a custom pattern (`INV-####-####`). |
 | `ensureUnique(generate, exists, options?)` | Retry generation until an ID is free in *your* store. |
 | `isId(value, prefix, sep?)` | Type guard — narrows `value` to `` `${prefix}_${string}` ``. |
 | `getPrefix(value, sep?)` | Extract the prefix, or `undefined`. |
+| `BASE32_CROCKFORD` | Crockford Base32 alphabet preset (no `I`/`L`/`O`/`U`; case-insensitive). |
 | `PrefixedId<P>` (type) | `` `${P}_${string}` ``. |
-| `IdOptions`, `IdGenerator`, `TemplateOptions`, `EnsureUniqueOptions` (types) | Public types. |
+| `IdOptions`, `IdGenerator`, `SortableIdOptions`, `GetTimestampOptions`, `TemplateOptions`, `EnsureUniqueOptions` (types) | Public types. |
 
 ### Defaults (in `src/constants.ts`)
 
@@ -87,12 +94,21 @@ prefID fixes both: a readable prefix **and** a type that encodes that prefix.
 - `DEFAULT_SIZE` = 24 (random characters after the separator).
 - `DEFAULT_SEPARATOR` = `"_"`.
 - `MAX_SIZE` = 4096 (upper bound on `size` and on template placeholders).
+- `DEFAULT_SORTABLE_RANDOM_SIZE` = 16 (random tail of a sortable ID; ~95 bits).
+- `SORTABLE_TIME_MAX` = `2^48 - 1` (largest timestamp the default width encodes —
+  the year 10889, matching ULID’s 48-bit time field).
+- `BASE32_CROCKFORD` = `0123456789ABCDEFGHJKMNPQRSTVWXYZ` (32 chars; omits the
+  ambiguous `I`, `L`, `O`, `U`; already ascending, so it works with `sortableId`).
 
 ### Behaviour notes
 
 - `id("user")` → `user_` + 24 random base62 chars.
 - `createId({ size, separator, alphabet })` validates its options **once** and
   returns a reusable generator. `id` is literally `createId()` with defaults.
+- `sortableId("evt")` → `evt_` + a fixed-width timestamp + a random tail, so a
+  plain string sort is also a chronological sort. `createSortableId(options)`
+  configures it; `sortableId` is `createSortableId()` with defaults. Full detail
+  in [§8](#8-deep-dive-sortable-ids).
 - `template("user_####")` → each `#` becomes one random char; everything else is
   literal. Returns a **generator function** you call repeatedly.
 - `ensureUnique` defaults to `maxAttempts: 5`; the caller supplies the `exists`
@@ -104,23 +120,35 @@ prefID fixes both: a readable prefix **and** a type that encodes that prefix.
 
 ```
 src/
-  index.ts          Public entry (universal build). Barrel of exports.
-  index.node.ts     Node-specific entry. Injects node:crypto, then re-exports index.ts.
-  generate.ts       createId() + the default id().
-  template.ts       template().
-  ensure-unique.ts  ensureUnique().
-  validate.ts       isId() + getPrefix().
-  constants.ts      Default alphabet / size / separator / MAX_SIZE.
-  types.ts          Public types (PrefixedId, IdOptions, IdGenerator).
+  index.ts            Public entry (universal build). Barrel of exports.
+  index.node.ts       Node-specific entry. Injects node:crypto, then re-exports index.ts.
+  constants/
+    index.ts          Default alphabet / size / separator / MAX_SIZE / sortable + BASE32_CROCKFORD.
+  types/
+    index.ts          Public types (PrefixedId, IdOptions, IdGenerator).
+  generators/
+    generate.ts       createId() + the default id().
+    sortable.ts       createSortableId() + sortableId() + getTimestamp().
+    template.ts       template().
+  utils/
+    validate.ts       isId() + getPrefix().
+    ensure-unique.ts  ensureUnique().
   internal/
-    random.ts       CSPRNG sourcing + the unbiased randomString algorithm.
-test/               One test file per module + smoke tests.
-scripts/            Cross-runtime smoke tests (smoke.mjs, smoke.cjs, browser-smoke.html).
+    random.ts         CSPRNG sourcing + randomIndices() + the unbiased randomString.
+    prefix.ts         Shared assertValidPrefix() used by every generator.
+test/                 One test file per module + smoke tests.
+scripts/              Cross-runtime smoke tests (smoke.mjs, smoke.cjs, browser-smoke.html).
 ```
 
+The source is comment-free: behaviour is documented here in `DESIGN.md` and on
+the docs site, and the code is kept self-explanatory through naming.
+
 **Design principle:** the public surface is tiny and each file has one job. The
-only genuinely tricky code lives in `internal/random.ts`; everything else is
-thin, validated wrappers around it.
+only genuinely tricky code lives in `internal/random.ts` and `generators/sortable.ts`;
+everything else is thin, validated wrappers around them. `randomIndices()` (raw
+index sampling) is the shared primitive: `randomString` maps its output to
+characters, and `sortable.ts` keeps the raw indices so it can *increment* them
+for monotonic ordering (see [§8](#8-deep-dive-sortable-ids)).
 
 ---
 
@@ -156,12 +184,12 @@ resistance and unpredictability).
 
 ### 5.3 The fix — masking + rejection sampling
 
-prefID uses the same technique as nanoid (`randomString` in `internal/random.ts`):
+prefID uses the same technique as nanoid (`randomIndices` in `internal/random.ts`):
 
 ```js
-const mask = (2 << Math.floor(Math.log2(length - 1))) - 1;
-const step = Math.ceil((1.6 * mask * size) / length);
-// loop: for each random byte -> index = byte & mask; keep it only if index < length
+const mask = (2 << Math.floor(Math.log2(radix - 1))) - 1;
+const step = Math.ceil((1.6 * mask * size) / radix);
+// loop: for each random byte -> index = byte & mask; keep it only if index < radix
 ```
 
 Step by step, for a 62-char alphabet:
@@ -195,9 +223,17 @@ export function secureRandomBytes(n) { return bytesProvider(n); }
 `universalProvider` tries `globalThis.crypto.getRandomValues` first, then falls
 back to `require("node:crypto").randomFillSync`. The Node-specific entry
 (`index.node.ts`) calls `setBytesProvider` to inject a **statically-imported**
-`node:crypto` — see [§8](#8-deep-dive-cross-runtime-compatibility) for why this
+`node:crypto` — see [§9](#9-deep-dive-cross-runtime-compatibility) for why this
 matters. This is **dependency injection**: the algorithm doesn’t hard-code its
 randomness source, so each runtime can supply the right one.
+
+### 5.5 `randomIndices` vs `randomString`
+
+`randomIndices(radix, size)` returns the raw array of `[0, radix)` indices; it is
+the single place the masking/rejection logic lives. `randomString(alphabet, size)`
+simply maps those indices to characters. The sortable generator needs the raw
+indices (not a finished string) so it can **increment** them digit-by-digit for
+monotonic ordering — that’s why the primitive is exposed separately.
 
 ---
 
@@ -215,7 +251,8 @@ This is a **template literal type** — a TypeScript type that describes the
 *shape* of a string. `PrefixedId<"user">` is the type `` `user_${string}` ``:
 any string starting with `user_`. Because `id`’s signature is
 `<P extends string>(prefix: P) => PrefixedId<P>`, calling `id("user")` returns a
-value typed `` `user_${string}` ``.
+value typed `` `user_${string}` ``. `sortableId` shares the same signature and
+type, so sortable IDs are just as type-safe.
 
 The payoff:
 
@@ -264,13 +301,20 @@ effectively impossible.
 
 Entropy (bits of randomness) = `characters × log2(alphabet size)`.
 
-Default: `24 × log2(62) ≈ 24 × 5.954 ≈ 143 bits`. (A UUIDv4 has 122 random bits,
-so the default is *more* random than a UUID.)
+- `id` default: `24 × log2(62) ≈ 143 bits` (a UUIDv4 has 122 random bits, so the
+  default is *more* random than a UUID).
+- `sortableId` default: `16 × log2(62) ≈ 95 bits` in the random tail — more than
+  ULID’s 80 and UUIDv7’s ~74.
 
-**Birthday bound:** you reach a ~50% chance of *one* collision after roughly
-`√(2^143) = 2^71.5 ≈ 4.2 × 10²¹` IDs. In plain terms: generate a billion IDs per
-second and it would take tens of thousands of years to get a coin-flip chance of
-a single clash. Different prefixes can never collide (different strings).
+“Entropy” is **not** a storage requirement — an ID is just a string in a `text`
+column; more entropy only means more characters. Tune it with `size`
+(`createId`) or `randomSize` (`createSortableId`), or a denser `alphabet`.
+
+**Birthday bound:** you reach a ~50% chance of *one* collision after roughly the
+square root of the space. For the 143-bit default that is `2^71.5 ≈ 4.2 × 10²¹`
+IDs: generate a billion per second and it would take tens of thousands of years
+to get a coin-flip chance of a single clash. Different prefixes can never collide
+(different strings).
 
 ### 7.3 The real guarantee
 
@@ -281,17 +325,117 @@ so a broken `exists` function can’t loop forever.
 
 ---
 
-## 8. Deep dive: cross-runtime compatibility
+## 8. Deep dive: sortable IDs
+
+`sortableId` / `createSortableId` produce **time-ordered** IDs: a plain
+lexicographic (string) sort is also a chronological sort. This is the idea behind
+**ULID** and **UUIDv7**, but keeping prefID’s prefix and type.
+
+### 8.1 The format
+
+```
+evt_ 00VQ5a1k 0lBjgjfx6pwYy6WkY
+│    │        └── random tail (randomSize chars, default 16 ≈ 95 bits)
+│    └────────── fixed-width timestamp (timestampSize chars, default 9)
+└─────────────── prefix + separator
+```
+
+The body is `<timestamp><random>`. Because the timestamp comes first and is a
+**fixed width**, comparing two IDs as strings compares their timestamps first.
+
+### 8.2 Why the timestamp must be fixed-width and the alphabet ascending
+
+Lexicographic comparison walks characters left-to-right and stops at the first
+difference. Two properties make that match chronological order:
+
+1. **Fixed width (zero-padded).** `"9"` and `"100"` sort as `"100" < "9"` as
+   strings, which is wrong numerically. Padding every timestamp to the same width
+   (`"009"`, `"100"`) fixes this — shorter-time never sorts after longer-time.
+2. **Ascending alphabet.** A string sort uses code-point order. It only matches
+   the digit values if the alphabet’s characters are in **strictly ascending
+   code-point order**. Base62 (`0-9A-Za-z`) already is; so is `BASE32_CROCKFORD`.
+   `createSortableId` **validates** this and throws a `RangeError` otherwise,
+   because a non-ascending alphabet would silently break sortability.
+
+The timestamp is the milliseconds since the Unix epoch, encoded in the alphabet’s
+radix. The default width is the smallest that holds `SORTABLE_TIME_MAX = 2^48-1`
+(the year 10889) — 9 chars in base62, mirroring ULID’s 48-bit time field.
+`getTimestamp` reverses the encoding to read the time back out.
+
+### 8.3 Monotonicity (same-millisecond + backward clock)
+
+Wall clocks have only millisecond resolution and can jump **backwards** (NTP
+correction, VM pause). Naively, two IDs in the same millisecond would order only
+by their random tails — not strictly increasing. So by default the generator is
+**monotonic** within a process:
+
+- It keeps the last timestamp and the last tail (as raw indices).
+- If the clock reads `<=` the last timestamp, it **reuses** the last timestamp
+  and **increments the tail by one** (with carry) instead of drawing a fresh one.
+  Incrementing guarantees the new ID is strictly greater than the previous.
+- If the tail is ever fully exhausted within a millisecond, it **spills into the
+  next millisecond** and draws a fresh tail.
+
+This is the same approach as ULID’s `monotonicFactory`. Pass `monotonic: false`
+for a stateless generator ordered only at millisecond granularity. **Scope:**
+monotonicity is per-process (in-memory) — it does not span processes or survive a
+restart, which is exactly why the random tail (not just a counter) carries the
+cross-process uniqueness.
+
+### 8.4 Distributed systems — what it does and does not guarantee
+
+- **Uniqueness across nodes — solid.** Coordination-free schemes get multi-node
+  uniqueness from *random bits*, not from a server. Two nodes minting in the same
+  millisecond collide only via the birthday bound on the ~95-bit tail — far safer
+  than ULID (80 bits) or UUIDv7 (~74). No node IDs required.
+- **Ordering across nodes — “k-sorted”, not total.** Two IDs from different nodes
+  in the same millisecond order by their random tails (i.e. arbitrarily *within*
+  that 1 ms window). This is **exactly** what ULID and UUIDv7 give; no scheme
+  achieves true global time-ordering without coordination (a central sequencer,
+  or synchronized clocks with uncertainty waits like Spanner’s TrueTime).
+- **Clock skew.** The timestamp is wall-clock, so a node whose clock runs ahead
+  mints IDs that sort ahead of a slower node’s later IDs. Every timestamp-based
+  ID (UUIDv7, ULID, KSUID) shares this; the mitigation is NTP/chrony, not code.
+- **vs Snowflake.** Snowflake encodes a **worker/node ID** and a per-ms sequence
+  because its 64-bit budget is too small to rely on randomness — so it *must*
+  partition, at the cost of assigning unique node IDs (config/coordination) and a
+  hard `~4096/ms/node` cap that **blocks** when exceeded. prefID trades that for
+  randomness: no node assignment, no hard cap, no blocking — but the ID does not
+  encode which node produced it, and the per-ms ordering across nodes is random.
+
+**The prefix caveat.** Because the prefix is leftmost, sortability holds *within a
+single prefix* (the normal case: one prefix per table). Across different prefixes
+IDs group by prefix first, then time — so a single mixed-prefix stream is not
+globally time-sorted by ID alone. Moving the timestamp before the prefix would
+fix that but discard the whole point of a prefix-first, readable, typed ID; it is
+a deliberate trade, not a bug.
+
+### 8.5 The `BASE32_CROCKFORD` preset
+
+For case-insensitive, unambiguous IDs, pass `BASE32_CROCKFORD` as the `alphabet`.
+It is Crockford’s Base32 — the alphabet ULID uses — which omits `I`, `L`, `O`,
+`U`, so no `1`/`l` or `0`/`O` confusion, and being single-case it survives
+case-folding stores, printed codes, and read-aloud use. It is already ascending,
+so it plugs into `createSortableId` directly.
+
+**Interview soundbite:** *“It’s ULID/UUIDv7-style: a fixed-width, ascending-encoded
+timestamp so string sort equals time sort, plus ~95 random bits for coordination-
+free uniqueness. It’s monotonic within a process and k-sorted across nodes —
+which is all any coordination-free scheme can promise.”*
+
+---
+
+## 9. Deep dive: cross-runtime compatibility
 
 This is prefID’s best engineering story.
 
-### 8.1 The runtimes and their random sources
+### 9.1 The runtimes and their random sources
 
 - **Browsers, Deno, Bun, edge, modern Node** expose a global
   `globalThis.crypto.getRandomValues`.
 - **Node.js** always has `node:crypto` (with `randomFillSync`).
 
-### 8.2 The bug (great war story)
+### 9.2 The bug (great war story)
 
 The unit tests passed, but a **runtime smoke test** (an actual script executed by
 each runtime) failed on **Node 18 in ES module (ESM) mode**. Investigation:
@@ -304,7 +448,7 @@ each runtime) failed on **Node 18 in ES module (ESM) mode**. Investigation:
   (Unit tests missed it because the test runner executes in a CommonJS-ish
   context where `require` *is* available.)
 
-### 8.3 The fix — dual entry points via `exports` conditions
+### 9.3 The fix — dual entry points via `exports` conditions
 
 Rather than dropping Node 18, prefID ships **two builds** and lets the package
 manager pick the right one automatically:
@@ -344,7 +488,7 @@ older versions lack. Minimum runtime is **Node 14.18** — the first release wit
 
 ---
 
-## 9. Build & packaging
+## 10. Build & packaging
 
 - **Bundler:** [tsup](https://tsup.egoist.dev) (a thin wrapper over esbuild).
 - **Two entries** (`index.ts`, `index.node.ts`) × **two formats** produce:
@@ -354,43 +498,46 @@ older versions lack. Minimum runtime is **Node 14.18** — the first release wit
   - `dist/index.d.ts` / `.d.cts` — TypeScript declaration files (the types
     shipped to consumers).
 - **`"files": ["dist"]`** — only the compiled output is published; `src/`,
-  `test/`, config, etc. stay in the repo. (`npm pack --dry-run` confirms 9 files.)
+  `test/`, config, etc. stay in the repo.
 - **`"sideEffects": false`** — tells bundlers the package has no import-time side
   effects, enabling **tree-shaking** (dead-code elimination): an app that imports
-  only `id` doesn’t bundle `template`.
+  only `id` doesn’t bundle `template` or `sortableId`.
 - **Zero `dependencies`.** Everything under `devDependencies` is build/test
   tooling and never ships.
 
 ---
 
-## 10. Testing strategy
+## 11. Testing strategy
 
 Three complementary layers:
 
-1. **Unit tests (Vitest)** — one file per module; ~44 tests covering behaviour,
-   options, validation, and error cases.
+1. **Unit tests (Vitest)** — one file per module covering behaviour, options,
+   validation, and error cases (including the sortable-specific edge cases:
+   ordering, monotonicity, backward-clock clamp, tail-overflow spill,
+   timestamp round-trip, non-ascending-alphabet rejection, timestamp-too-large).
 2. **A statistical test** — generates tens of thousands of single-char IDs and
    asserts each character appears within a tight margin of the expected uniform
    frequency. This is what *proves* the rejection-sampling has no modulo bias.
 3. **Cross-runtime smoke tests** (`scripts/smoke.mjs`, `smoke.cjs`,
    `browser-smoke.html`) — a plain script run by **Node (ESM + CJS), Bun, and
-   Deno** in CI, plus a browser page. Because it *actually executes* in each
-   runtime, it verifies the crypto sourcing per environment (this is what caught
-   the Node 18 bug).
+   Deno** in CI, plus a browser page. It exercises `id`, `sortableId`
+   (ordering + `getTimestamp`) and `BASE32_CROCKFORD`. Because it *actually
+   executes* in each runtime, it verifies the crypto sourcing per environment
+   (this is what caught the Node 18 bug).
 
 CI runs the unit suite on a **Node version matrix** and the smoke suite across
 runtimes on every push.
 
 ---
 
-## 11. CI/CD & publishing
+## 12. CI/CD & publishing
 
 Automated with **GitHub Actions** (CI = Continuous Integration; CD = Continuous
 Delivery/Deployment — running checks and shipping automatically).
 
 - **`ci.yml`** — on every push/PR: format check → typecheck → tests → build,
   across the Node matrix, plus the cross-runtime job.
-- **`publish.yml`** — on pushing a version tag (`v0.3.2`): test, then publish to
+- **`publish.yml`** — on pushing a version tag (`v0.4.0`): test, then publish to
   npm, then auto-create a GitHub Release with generated notes.
 
 ### OIDC trusted publishing (explained)
@@ -414,45 +561,52 @@ impersonated release).
 
 **SemVer** (Semantic Versioning) — `MAJOR.MINOR.PATCH`: PATCH = backwards-
 compatible fixes, MINOR = backwards-compatible features, MAJOR = breaking
-changes. `template()` shipped as a MINOR bump; bug fixes as PATCH. A future
-stable API graduates to `1.0.0`. `CHANGELOG.md` follows *Keep a Changelog*.
+changes. `template()` and `sortableId()` shipped as MINOR bumps; bug fixes as
+PATCH. A future stable API graduates to `1.0.0`. `CHANGELOG.md` follows *Keep a
+Changelog*.
 
 ---
 
-## 12. Security considerations
+## 13. Security considerations
 
-- **CSPRNG only** — never `Math.random()`; IDs are unpredictable.
+- **CSPRNG only** — never `Math.random()`; IDs (including the sortable random
+  tail) are unpredictable.
 - **Unbiased output** — rejection sampling keeps the distribution uniform, which
   is what preserves both unpredictability and collision resistance.
-- **Input hardening** — `size` and template placeholder counts are capped at
-  `MAX_SIZE` (4096) so an attacker feeding a huge value from untrusted input
-  can’t exhaust memory. Prefixes/alphabets/separators are validated with clear
-  `TypeError`/`RangeError`s.
-- **Supply chain** — OIDC trusted publishing + provenance (see §11).
+- **Input hardening** — `size`, `randomSize`, `timestampSize`, and template
+  placeholder counts are capped at `MAX_SIZE` (4096) so an attacker feeding a
+  huge value from untrusted input can’t exhaust memory. Prefixes / alphabets /
+  separators are validated with clear `TypeError`/`RangeError`s.
+- **Sortable IDs leak creation time by design** — the timestamp is decodable via
+  `getTimestamp`. That is the point; just don’t use one where the creation time
+  must stay secret (use `id` there).
+- **Supply chain** — OIDC trusted publishing + provenance (see §12).
 - **Compile-time types are not runtime validation** — untrusted strings must be
   checked with `isId()`.
 
 ---
 
-## 13. Design decisions & trade-offs
+## 14. Design decisions & trade-offs
 
 Be ready to justify each of these:
 
 | Decision | Why | Trade-off accepted |
 | --- | --- | --- |
-| **base62 default alphabet** | URL-safe, double-click-selectable (no `-`/`_` inside the random part), case-dense for short IDs | Not sortable; mixed case can be case-sensitivity-sensitive in some stores |
+| **base62 default alphabet** | URL-safe, double-click-selectable, case-dense for short IDs; already ascending so it works for sortable IDs too | Mixed case can be case-sensitivity-sensitive in some stores (use `BASE32_CROCKFORD` there) |
 | **`_` separator** | Matches Stripe convention; keeps the whole ID one “word” for selection | — |
 | **Rejection sampling over modulo** | Eliminates modulo bias → uniform, secure | Slightly more bytes consumed on average |
-| **Stateless `ensureUnique` (caller supplies `exists`)** | Keeps the core dependency-free and DB-agnostic; works with any store | Caller must wire up the check |
-| **Prefix type is structural** | Zero runtime cost, simple, ergonomic | Not forgery-proof (needs `isId` for untrusted input) |
+| **Sortable = timestamp-first, prefix stays leftmost** | Keeps readability + type; sortable within a prefix (the per-table norm) | Not globally time-sorted across different prefixes |
+| **Monotonic by default (per-process)** | Strictly increasing within a process even on same-ms / backward clock | State is in-memory only; cross-node order is k-sorted |
+| **Uniqueness via randomness, not node IDs** | Coordination-free; no node-ID assignment; no throughput cap | ID doesn’t encode its origin node; no hard per-ms guarantee |
+| **Stateless `ensureUnique`** | Keeps the core dependency-free and DB-agnostic | Caller must wire up the check |
+| **Prefix type is structural** | Zero runtime cost, simple, ergonomic | Not forgery-proof (needs `isId`) |
 | **Dual entry + `exports` conditions** | Works on every runtime incl. Node 18 ESM, without breaking browser bundlers | More build complexity than a single file |
 | **Zero dependencies** | Nothing to audit, tiny install, no supply-chain surface | Re-implement small utilities ourselves |
 | **Node ≥ 14.18** | First version with `node:crypto`; broad support without hacks | Won’t run on ancient Node |
-| **`template()` returns a generator** | Reuse a compiled pattern; consistent with `createId` | One extra call (`template(pat)()`) for one-offs |
 
 ---
 
-## 14. Comparison with alternatives
+## 15. Comparison with alternatives
 
 | | Prefixes | Type-safe prefix | Sortable | Secure RNG | Deps |
 | --- | :-: | :-: | :-: | :-: | :-: |
@@ -461,22 +615,36 @@ Be ready to justify each of these:
 | `nanoid` | ❌ | ❌ | ❌ | ✅ | 0 |
 | `ulid` | ❌ | ❌ | ✅ | ✅ | few |
 | `cuid2` | ❌ | ❌ | ❌ | ✅ | few |
-| **prefID** | ✅ | ✅ | ❌ (yet) | ✅ | **0** |
+| **prefID** | ✅ | ✅ | ✅ (`sortableId`) | ✅ | **0** |
 
 - **uuid** — the RFC 9562 standard; use it when you need the exact format (e.g. a
-  Postgres `UUID` column) or time-sortable v7 keys.
+  Postgres `UUID` column) or a fixed 16-byte binary key. prefID IDs are readable
+  strings, so they cost more storage than a packed UUID — that is the trade for
+  legibility.
 - **nanoid** — short, customisable random strings; prefID borrows its RNG
   technique.
-- **prefID’s niche** — readable, self-describing, *type-safe* IDs.
+- **ulid / uuid v7** — the closest to prefID’s `sortableId`: 48-bit time +
+  randomness, k-sorted across nodes. `sortableId` matches their model with more
+  default entropy, a prefix, and a type.
+- **prefID’s niche** — readable, self-describing, *type-safe* IDs, optionally
+  time-ordered.
 
 ---
 
-## 15. Known limitations & future work
+## 16. Known limitations & future work
 
-- **Not sortable.** Random IDs don’t sort by creation time. A planned
-  `sortableId()` (ULID/UUIDv7-style: timestamp + randomness) would add
-  time-ordering while staying coordination-free.
+- **Sortability is per-prefix and k-sorted across nodes.** Within one prefix and
+  one process it’s strictly ordered; across prefixes it groups by prefix, and
+  across nodes it’s only millisecond-granular (see [§8.4](#8-deep-dive-sortable-ids)).
+  True global ordering needs coordination — out of scope for a coordination-free
+  library.
+- **Wall-clock dependence.** Sortable IDs inherit clock-skew behaviour common to
+  all timestamp IDs; run NTP.
 - **Structural typing** isn’t forgery-proof (by design; use `isId`).
+- **No embedded node ID.** Unlike Snowflake, an ID doesn’t say which node made
+  it. A future optional `node` segment (placed after the timestamp to keep
+  ordering) could add that for traceability — deliberately omitted for now
+  because randomness already covers uniqueness.
 - **No built-in checksum.** A future option could add a check character to detect
   typo’d/corrupted IDs.
 - **Ecosystem** — `prefid-zod` (validation), ORM adapters (Drizzle/Prisma) are
@@ -484,7 +652,7 @@ Be ready to justify each of these:
 
 ---
 
-## 16. Interview Q&A
+## 17. Interview Q&A
 
 **Q: Why not just use UUID?**
 A: UUIDs are opaque and untyped. prefID gives readable, self-describing IDs
@@ -494,9 +662,27 @@ solve different problems.
 
 **Q: How do you guarantee uniqueness?**
 A: I don’t *guarantee* it in the generator — same as uuid/nanoid; it’s
-probabilistic. The default has ~143 bits of entropy (more than a UUIDv4), so a
+probabilistic. Defaults are ~143 bits (`id`) / ~95 bits (`sortableId`), so a
 collision is astronomically unlikely. For a hard guarantee you add a DB UNIQUE
 constraint, and `ensureUnique` offers an app-level check with a retry cap.
+
+**Q: How do the sortable IDs work?**
+A: The body is a fixed-width, ascending-encoded millisecond timestamp followed by
+a random tail, so a plain string sort equals a time sort — the ULID/UUIDv7 idea.
+Fixed width + an ascending alphabet are what make string order match time order,
+and I validate the alphabet is ascending.
+
+**Q: Are they safe in a distributed system?**
+A: For uniqueness, yes — coordination-free via ~95 random bits, more than ULID or
+UUIDv7. For ordering they’re *k-sorted*: two nodes in the same millisecond order
+by randomness, exactly like ULID/UUIDv7. Nobody gets true global order without
+coordination. They also inherit wall-clock skew, so you run NTP.
+
+**Q: How is that different from Snowflake?**
+A: Snowflake partitions the space with a worker-ID + sequence because 64 bits is
+too tight to rely on randomness; that needs node-ID assignment and has a hard
+per-ms cap that blocks. I rely on randomness instead: no coordination, no cap, no
+blocking — but the ID doesn’t encode its node.
 
 **Q: Why not `Math.random()`?**
 A: It’s a predictable PRNG, not secure, and can produce guessable IDs. I use the
@@ -552,6 +738,22 @@ the source commit.
   distribution uniform.
 - **Birthday bound** — the rule that collisions become likely around the square
   root of the space size (`√N`), not `N`.
+- **Sortable / time-ordered ID** — an ID whose lexicographic order matches
+  creation-time order (ULID, UUIDv7, prefID’s `sortableId`).
+- **Monotonic** — strictly increasing; here, successive IDs within a process are
+  guaranteed to increase even within one millisecond or if the clock rewinds.
+- **k-sorted** — approximately time-ordered: correct across milliseconds, but
+  arbitrary within the same millisecond across independent generators.
+- **ULID** — Universally unique Lexicographically-sortable Identifier: 48-bit
+  time + 80-bit randomness in Crockford Base32.
+- **UUIDv7** — the RFC 9562 time-ordered UUID: 48-bit ms timestamp + random bits.
+- **Snowflake** — Twitter’s 64-bit ID: timestamp + worker-ID + per-ms sequence;
+  requires assigning unique node IDs.
+- **Crockford Base32** — a 32-char alphabet omitting `I`/`L`/`O`/`U`; case-
+  insensitive and unambiguous (`BASE32_CROCKFORD`).
+- **Clock skew** — disagreement between machines’ wall clocks; affects any
+  timestamp-based ID’s cross-node ordering.
+- **Coordination-free** — generators need no shared server/lock to stay unique.
 - **ESM** — ECMAScript Modules: the standard `import`/`export` module system.
 - **CJS** — CommonJS: Node’s older `require`/`module.exports` system.
 - **Template literal type** — a TypeScript type describing a string’s shape,
