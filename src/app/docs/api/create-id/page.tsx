@@ -1,4 +1,5 @@
 import { CodeBlock } from "@/components/CodeBlock";
+import { CodeSample } from "@/components/CodeSample";
 import { DocsPager } from "@/components/DocsPager";
 import { PageHeader } from "@/components/PageHeader";
 
@@ -10,7 +11,14 @@ const signature = `function createId(options?: {
   alphabet?: string;  // default: base62 (0-9A-Za-z)
 }): <P extends string>(prefix: P) => \`\${P}_\${string}\``;
 
-const usage = `import { createId } from "prefid";
+const usageTs = `import { createId } from "prefid";
+
+const id = createId({ size: 16 });
+
+id("user");  // => "user_a1b2c3d4e5f6g7h8"
+id("order"); // => "order_9f8e7d6c5b4a3F2e"`;
+
+const usageJs = `const { createId } = require("prefid");
 
 const id = createId({ size: 16 });
 
@@ -26,7 +34,14 @@ const id = createId({ alphabet: "23456789abcdefghjkmnpqrstuvwxyz" });
 
 id("code"); // => "code_mn7pqr2stuv9wxyz34abcdef"`;
 
-const preset = `import { createId, BASE32_CROCKFORD } from "prefid";
+const presetTs = `import { createId, BASE32_CROCKFORD } from "prefid";
+
+// Crockford Base32 (the ULID alphabet): omits I, L, O, U.
+const id = createId({ alphabet: BASE32_CROCKFORD });
+
+id("code"); // => "code_MN7PQR2STVWXYZ34ABCDEFGH" — no 0/O or 1/l confusion"`;
+
+const presetJs = `const { createId, BASE32_CROCKFORD } = require("prefid");
 
 // Crockford Base32 (the ULID alphabet): omits I, L, O, U.
 const id = createId({ alphabet: BASE32_CROCKFORD });
@@ -98,7 +113,7 @@ export default function CreateIdPage() {
         </div>
 
         <h2>Custom size</h2>
-        <CodeBlock code={usage} />
+        <CodeSample ts={usageTs} js={usageJs} />
 
         <h2>Custom separator</h2>
         <CodeBlock code={separator} />
@@ -116,7 +131,7 @@ export default function CreateIdPage() {
           <code>O</code>, and <code>U</code>, so ids are safe to read aloud,
           print, or store in case-folding systems.
         </p>
-        <CodeBlock code={preset} />
+        <CodeSample ts={presetTs} js={presetJs} />
 
         <h2>Notes</h2>
         <ul>

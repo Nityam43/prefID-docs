@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/CodeBlock";
+import { CodeSample } from "@/components/CodeSample";
 import { DocsPager } from "@/components/DocsPager";
 import { PageHeader } from "@/components/PageHeader";
 
@@ -7,7 +8,13 @@ export const metadata = { title: "id()" };
 
 const signature = `function id<P extends string>(prefix: P): \`\${P}_\${string}\``;
 
-const usage = `import { id } from "prefid";
+const usageTs = `import { id } from "prefid";
+
+id("user");    // => "user_a8Kd0f2bQ1nR7pZ3xW4mT6y"
+id("order");   // => "order_9f8e7d6c5b4a3F2e1D0cB9aX"
+id("invoice"); // => "invoice_2xR7pZ3xW4mT6yQ1nR7pZ3x"`;
+
+const usageJs = `const { id } = require("prefid");
 
 id("user");    // => "user_a8Kd0f2bQ1nR7pZ3xW4mT6y"
 id("order");   // => "order_9f8e7d6c5b4a3F2e1D0cB9aX"
@@ -33,7 +40,7 @@ export default function IdPage() {
           Call <code>id</code> with a prefix string. The default output has 24
           random base62 characters after an underscore separator.
         </p>
-        <CodeBlock code={usage} />
+        <CodeSample ts={usageTs} js={usageJs} />
 
         <h2>Parameters</h2>
         <ul>

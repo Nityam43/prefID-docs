@@ -1,4 +1,5 @@
 import { CodeBlock } from "@/components/CodeBlock";
+import { CodeSample } from "@/components/CodeSample";
 import { DocsPager } from "@/components/DocsPager";
 import { PageHeader } from "@/components/PageHeader";
 
@@ -10,11 +11,24 @@ const isIdSig = `function isId<P extends string>(
   separator?: string // default: "_"
 ): value is \`\${P}_\${string}\``;
 
-const isIdUsage = `import { isId } from "prefid";
+const isIdUsageTs = `import { isId } from "prefid";
 
 function handle(value: unknown) {
   if (isId(value, "user")) {
     // value is now typed as \`user_\${string}\`
+    value.toUpperCase();
+  }
+}
+
+isId("user_abc", "user");  // => true
+isId("order_abc", "user"); // => false
+isId(42, "user");          // => false`;
+
+const isIdUsageJs = `const { isId } = require("prefid");
+
+function handle(value) {
+  if (isId(value, "user")) {
+    // value is a "user_…" string here
     value.toUpperCase();
   }
 }
@@ -28,7 +42,13 @@ const getPrefixSig = `function getPrefix(
   separator?: string // default: "_"
 ): string | undefined`;
 
-const getPrefixUsage = `import { getPrefix } from "prefid";
+const getPrefixUsageTs = `import { getPrefix } from "prefid";
+
+getPrefix("user_a1b2c3");  // => "user"
+getPrefix("order_9f8e7d"); // => "order"
+getPrefix("no-separator"); // => undefined`;
+
+const getPrefixUsageJs = `const { getPrefix } = require("prefid");
 
 getPrefix("user_a1b2c3");  // => "user"
 getPrefix("order_9f8e7d"); // => "order"
@@ -51,7 +71,7 @@ export default function ValidationPage() {
           prefixed-ID type.
         </p>
         <CodeBlock code={isIdSig} />
-        <CodeBlock code={isIdUsage} />
+        <CodeSample ts={isIdUsageTs} js={isIdUsageJs} />
 
         <h2>getPrefix()</h2>
         <p>
@@ -59,7 +79,7 @@ export default function ValidationPage() {
           <code>undefined</code> when the separator is absent (or leading).
         </p>
         <CodeBlock code={getPrefixSig} />
-        <CodeBlock code={getPrefixUsage} />
+        <CodeSample ts={getPrefixUsageTs} js={getPrefixUsageJs} />
 
         <h2>Custom separators</h2>
         <p>

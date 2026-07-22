@@ -1,11 +1,20 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/CodeBlock";
+import { CodeSample } from "@/components/CodeSample";
 import { DocsPager } from "@/components/DocsPager";
 import { PageHeader } from "@/components/PageHeader";
 
 export const metadata = { title: "Quick Start" };
 
-const basic = `import { id } from "prefid";
+const basicTs = `import { id } from "prefid";
+
+const userId = id("user");
+// => "user_a8Kd0f2bQ1nR7pZ3xW4mT6y"
+
+const orderId = id("order");
+// => "order_9f8e7d6c5b4a3F2e1D0cB9aX"`;
+
+const basicJs = `const { id } = require("prefid");
 
 const userId = id("user");
 // => "user_a8Kd0f2bQ1nR7pZ3xW4mT6y"
@@ -21,7 +30,14 @@ function getUser(id: \`user_\${string}\`) { /* ... */ }
 getUser(userId);        // ✅ ok
 getUser(id("order"));   // ❌ compile error — that's an order id`;
 
-const configured = `import { createId } from "prefid";
+const configuredTs = `import { createId } from "prefid";
+
+// Configure once, reuse everywhere.
+const id = createId({ size: 16 });
+
+id("user"); // => "user_a1b2c3d4e5f6g7h8"`;
+
+const configuredJs = `const { createId } = require("prefid");
 
 // Configure once, reuse everywhere.
 const id = createId({ size: 16 });
@@ -42,7 +58,7 @@ export default function QuickStartPage() {
           Import <code>id</code> and call it with a prefix. That&apos;s the
           whole API for the common case.
         </p>
-        <CodeBlock code={basic} />
+        <CodeSample ts={basicTs} js={basicJs} />
 
         <h2>The prefix is type-safe</h2>
         <p>
@@ -57,7 +73,7 @@ export default function QuickStartPage() {
           Use <code>createId</code> to set the size, separator, or alphabet once
           and reuse the generator across your app.
         </p>
-        <CodeBlock code={configured} />
+        <CodeSample ts={configuredTs} js={configuredJs} />
 
         <h2>What&apos;s next?</h2>
         <ul>

@@ -1,11 +1,16 @@
 import Link from "next/link";
-import { CodeBlock } from "@/components/CodeBlock";
+import { CodeSample } from "@/components/CodeSample";
 import { DocsPager } from "@/components/DocsPager";
 import { PageHeader } from "@/components/PageHeader";
 
 export const metadata = { title: "Introduction" };
 
-const example = `import { id } from "prefid";
+const exampleTs = `import { id } from "prefid";
+
+id("user");   // => "user_a8Kd0f2bQ1nR7pZ3xW4mT6y"
+id("order");  // => "order_9f8e7d6c5b4a3F2e1D0cB9aX"`;
+
+const exampleJs = `const { id } = require("prefid");
 
 id("user");   // => "user_a8Kd0f2bQ1nR7pZ3xW4mT6y"
 id("order");  // => "order_9f8e7d6c5b4a3F2e1D0cB9aX"`;
@@ -28,7 +33,7 @@ export default function IntroductionPage() {
           TypeScript, the prefix is understood by the type system too.
         </p>
 
-        <CodeBlock code={example} />
+        <CodeSample ts={exampleTs} js={exampleJs} />
 
         <h2>Why prefixed IDs?</h2>
         <ul>

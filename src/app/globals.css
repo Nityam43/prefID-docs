@@ -52,6 +52,27 @@ body {
   @apply rounded-md border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-[0.85em] text-slate-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200;
 }
 
+/* TS / JS code language toggle (driven by html[data-lang]) */
+.lang-variant--js {
+  display: none;
+}
+html[data-lang="js"] .lang-variant--js {
+  display: revert;
+}
+html[data-lang="js"] .lang-variant--ts {
+  display: none;
+}
+.lang-tabs {
+  @apply flex items-center gap-1;
+}
+.lang-btn {
+  @apply rounded px-1.5 py-0.5 font-mono text-xs uppercase tracking-wide text-slate-500 transition hover:text-slate-300;
+}
+html:not([data-lang="js"]) .lang-btn[data-lang-btn="ts"],
+html[data-lang="js"] .lang-btn[data-lang-btn="js"] {
+  @apply bg-slate-800 text-slate-100;
+}
+
 /* Shiki syntax-highlighted code blocks */
 .shiki-block .shiki {
   margin: 0;

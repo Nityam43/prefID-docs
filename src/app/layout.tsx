@@ -13,6 +13,8 @@ export const metadata: Metadata = {
 
 const themeScript = `(function(){try{var t=localStorage.getItem('theme');var m=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&m)){document.documentElement.classList.add('dark');}}catch(e){}})();`;
 
+const langScript = `(function(){try{var l=localStorage.getItem('prefid-lang');document.documentElement.dataset.lang=(l==='js')?'js':'ts';}catch(e){document.documentElement.dataset.lang='ts';}})();`;
+
 export default function RootLayout({
   children,
 }: {
@@ -22,6 +24,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: langScript }} />
       </head>
       <body className="min-h-screen font-sans">
         <Navbar />

@@ -1,4 +1,4 @@
-import { CodeBlock } from "@/components/CodeBlock";
+import { CodeSample } from "@/components/CodeSample";
 import { DocsPager } from "@/components/DocsPager";
 import { PageHeader } from "@/components/PageHeader";
 
@@ -10,13 +10,21 @@ const rows = [
   { name: "prefID", prefixes: true, typed: true, secure: true, deps: "0", highlight: true },
 ];
 
-const example = `import { v4 as uuidv4 } from "uuid";
+const exampleTs = `import { v4 as uuidv4 } from "uuid";
 import { nanoid } from "nanoid";
 import { id } from "prefid";
 
 uuidv4(); // "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
 nanoid(); // "V1StGXR8_Z5jdHi6B-myT"
 id("user"); // "user_a8Kd0f2bQ1nR7pZ3xW4mT6y"  ← self-describing + typed`;
+
+const exampleJs = `const { v4: uuidv4 } = require("uuid");
+const { nanoid } = require("nanoid");
+const { id } = require("prefid");
+
+uuidv4(); // "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+nanoid(); // "V1StGXR8_Z5jdHi6B-myT"
+id("user"); // "user_a8Kd0f2bQ1nR7pZ3xW4mT6y"  ← self-describing`;
 
 function Cell({ value }: { value: boolean }) {
   return <span>{value ? "✅" : "❌"}</span>;
@@ -88,7 +96,7 @@ export default function ComparisonPage() {
         </div>
 
         <h2>Side by side</h2>
-        <CodeBlock code={example} />
+        <CodeSample ts={exampleTs} js={exampleJs} />
 
         <h2>When to use which</h2>
         <ul>

@@ -1,11 +1,20 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/CodeBlock";
+import { CodeSample } from "@/components/CodeSample";
 import { DocsPager } from "@/components/DocsPager";
 import { PageHeader } from "@/components/PageHeader";
 
 export const metadata = { title: "sortableId()" };
 
-const usage = `import { sortableId, getTimestamp } from "prefid";
+const usageTs = `import { sortableId, getTimestamp } from "prefid";
+
+sortableId("evt"); // => "evt_00VQ5a1k0lBjgjfx6pwYy6WkY"
+sortableId("evt"); // => "evt_00VQ5a1mgkWGzAvv93g1bC3yR"  ← later, sorts after
+
+// Read back the millisecond timestamp baked into the id:
+getTimestamp("evt_00VQ5a1k0lBjgjfx6pwYy6WkY"); // => 1721600000000`;
+
+const usageJs = `const { sortableId, getTimestamp } = require("prefid");
 
 sortableId("evt"); // => "evt_00VQ5a1k0lBjgjfx6pwYy6WkY"
 sortableId("evt"); // => "evt_00VQ5a1mgkWGzAvv93g1bC3yR"  ← later, sorts after
@@ -18,7 +27,17 @@ const sorting = `const ids = [sortableId("row"), sortableId("row"), sortableId("
 // A plain string sort is also a chronological sort — no parsing needed.
 [...ids].sort(); // same order they were created in`;
 
-const configure = `import { createSortableId } from "prefid";
+const configureTs = `import { createSortableId } from "prefid";
+
+// A generator with your own settings:
+const newId = createSortableId({
+  randomSize: 20,   // more entropy in the random tail
+  separator: "-",   // "evt-…"
+});
+
+newId("evt"); // => "evt-00VQ5a1k0lBjgjfx6pwYy6WkYq2mT"`;
+
+const configureJs = `const { createSortableId } = require("prefid");
 
 // A generator with your own settings:
 const newId = createSortableId({
@@ -64,7 +83,7 @@ export default function SortableIdPage() {
           . The difference is the body: it starts with an encoded timestamp, so
           newer IDs always sort after older ones.
         </p>
-        <CodeBlock code={usage} />
+        <CodeSample ts={usageTs} js={usageJs} />
 
         <h2>Why sortable IDs?</h2>
         <ul>
@@ -118,7 +137,7 @@ export default function SortableIdPage() {
           Use <code>createSortableId()</code> to build a generator with fixed
           options, then reuse it:
         </p>
-        <CodeBlock code={configure} />
+        <CodeSample ts={configureTs} js={configureJs} />
 
         <h2>Signature</h2>
         <CodeBlock code={signature} />

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/CodeBlock";
+import { CodeSample } from "@/components/CodeSample";
 import { DocsPager } from "@/components/DocsPager";
 import { PageHeader } from "@/components/PageHeader";
 
@@ -11,13 +12,21 @@ const signature = `function ensureUnique<T extends string>(
   options?: { maxAttempts?: number } // default: 5
 ): Promise<T>`;
 
-const usage = `import { ensureUnique, id } from "prefid";
+const usageTs = `import { ensureUnique, id } from "prefid";
 
 const userId = await ensureUnique(
   () => id("user"),
   (candidate) => db.users.exists(candidate),
 );
 // userId is typed \`user_\${string}\` and confirmed free in your store`;
+
+const usageJs = `const { ensureUnique, id } = require("prefid");
+
+const userId = await ensureUnique(
+  () => id("user"),
+  (candidate) => db.users.exists(candidate),
+);
+// userId is a unique user_… id, confirmed free in your store`;
 
 const stores = `// Prisma
 ensureUnique(() => id("user"), (c) =>
@@ -53,7 +62,7 @@ export default function EnsureUniquePage() {
         </p>
 
         <h2>Usage</h2>
-        <CodeBlock code={usage} />
+        <CodeSample ts={usageTs} js={usageJs} />
 
         <h2>Works with any store</h2>
         <p>

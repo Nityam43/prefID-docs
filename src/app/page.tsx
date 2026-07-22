@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/CodeBlock";
+import { CodeSample } from "@/components/CodeSample";
 import { ArrowRightIcon, GitHubIcon } from "@/components/icons";
 import { GITHUB_URL, NPM_URL } from "@/lib/nav";
 
-//lol
+const heroExampleTs = `import { id } from "prefid";
 
-const heroExample = `import { id } from "prefid";
+id("user");   // => "user_a8Kd0f2bQ1nR7pZ3xW4mT6y"
+id("order");  // => "order_9f8e7d6c5b4a3F2e1D0cB9aX"`;
+
+const heroExampleJs = `const { id } = require("prefid");
 
 id("user");   // => "user_a8Kd0f2bQ1nR7pZ3xW4mT6y"
 id("order");  // => "order_9f8e7d6c5b4a3F2e1D0cB9aX"`;
@@ -111,7 +115,7 @@ export default async function HomePage() {
           </div>
 
           <div className="mx-auto mt-10 max-w-2xl">
-            <CodeBlock code={heroExample} lang="ts" />
+            <CodeSample ts={heroExampleTs} js={heroExampleJs} />
           </div>
         </div>
       </section>

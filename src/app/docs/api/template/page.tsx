@@ -1,12 +1,20 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/CodeBlock";
+import { CodeSample } from "@/components/CodeSample";
 import { DocsPager } from "@/components/DocsPager";
 import { PageHeader } from "@/components/PageHeader";
 
 export const metadata = { title: "template()" };
 
-//lol
-const basic = `import { template } from "prefid";
+const basicTs = `import { template } from "prefid";
+
+const userId = template("user_########");
+userId(); // "user_a8Kd0f2b"
+
+const invoice = template("INV-####-####");
+invoice(); // "INV-a3F2-9k1P"`;
+
+const basicJs = `const { template } = require("prefid");
 
 const userId = template("user_########");
 userId(); // "user_a8Kd0f2b"
@@ -52,7 +60,7 @@ export default function TemplatePage() {
           everything else is kept literally.
         </p>
 
-        <CodeBlock code={basic} />
+        <CodeSample ts={basicTs} js={basicJs} />
 
         <h2>Signature</h2>
         <CodeBlock code={signature} />
