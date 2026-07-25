@@ -31,7 +31,11 @@ template("pin-####", { alphabet: "0123456789" })();
 // "pin-4821"`;
 
 const typed = `const userId = template("user_####")();
-//    ^? type: \`user_\${string}\``;
+//    ^? type: \`user_\${string}\`
+
+// A custom placeholder is honoured by the type too:
+const room = template("room-***", { placeholder: "*" })();
+//    ^? type: \`room-\${string}\``;
 
 const signature = `function template(
   pattern: string,
@@ -115,10 +119,11 @@ export default function TemplatePage() {
 
         <h2>Type safety</h2>
         <p>
-          When you call <code>template()</code> with a string literal and the
-          default placeholder, the literal text before the first{" "}
-          <code>#</code> is preserved in the return type — so it fits the same
-          typed-prefix model as <code>id()</code>.
+          When you call <code>template()</code> with a string literal, the
+          literal text before the first placeholder is preserved in the return
+          type — so it fits the same typed-prefix model as <code>id()</code>.
+          This works with a custom <code>placeholder</code> too: the type keys
+          off whichever character you chose, not a hard-coded <code>#</code>.
         </p>
         <CodeBlock code={typed} />
 

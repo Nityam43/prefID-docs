@@ -59,6 +59,44 @@ const signature = `function createSortableId(options?: {
 // A ready-made generator with the defaults:
 const sortableId: <P extends string>(prefix: P) => \`\${P}_\${string}\``;
 
+const readingTs = `import { getTimestamp, getTimestampOrThrow, getDate } from "prefid";
+
+const id = sortableId("evt");
+
+// Safe: the ms timestamp, or undefined if the value is malformed.
+getTimestamp(id);          // => 1721600000000
+getTimestamp("not-an-id"); // => undefined
+
+// Strict: same value, but throws a TypeError instead of undefined.
+getTimestampOrThrow(id);   // => 1721600000000
+
+// Convenience: decode straight to a Date (or undefined).
+getDate(id);               // => Date(2024-07-21T…)`;
+
+const readingJs = `const { getTimestamp, getTimestampOrThrow, getDate } = require("prefid");
+
+const id = sortableId("evt");
+
+// Safe: the ms timestamp, or undefined if the value is malformed.
+getTimestamp(id);          // => 1721600000000
+getTimestamp("not-an-id"); // => undefined
+
+// Strict: same value, but throws a TypeError instead of undefined.
+getTimestampOrThrow(id);   // => 1721600000000
+
+// Convenience: decode straight to a Date (or undefined).
+getDate(id);               // => Date(2024-07-21T…)`;
+
+const readingSig = `type DecodeOptions = {
+  separator?: string;     // default: "_"
+  alphabet?: string;      // default: base62
+  timestampSize?: number; // default: 9
+};
+
+function getTimestamp(id: string, options?: DecodeOptions): number | undefined;
+function getTimestampOrThrow(id: string, options?: DecodeOptions): number;
+function getDate(id: string, options?: DecodeOptions): Date | undefined;`;
+
 export default function SortableIdPage() {
   return (
     <>
@@ -124,13 +162,33 @@ export default function SortableIdPage() {
 
         <h2>Reading the timestamp</h2>
         <p>
-          <code>getTimestamp(id, options?)</code> decodes the millisecond
-          timestamp embedded in a sortable ID, or returns{" "}
-          <code>undefined</code> if the value is not a well-formed sortable ID.
-          Pass the same <code>alphabet</code>, <code>separator</code>, and{" "}
+          Three helpers decode the millisecond timestamp baked into a sortable
+          ID. Pass the same <code>alphabet</code>, <code>separator</code>, and{" "}
           <code>timestampSize</code> the ID was generated with (the defaults
           match <code>sortableId</code>).
         </p>
+        <ul>
+          <li>
+            <code>getTimestamp(id)</code> — returns the millisecond timestamp,
+            or <code>undefined</code> when the value isn&apos;t a well-formed
+            sortable ID. Reach for this when an invalid value is an expected,
+            handled case — you branch on the result.
+          </li>
+          <li>
+            <code>getTimestampOrThrow(id)</code> — the strict variant: returns a{" "}
+            <code>number</code> and throws a <code>TypeError</code> on a
+            malformed value. Reach for this when a bad ID is a programmer error
+            you want surfaced loudly instead of silently becoming{" "}
+            <code>undefined</code>.
+          </li>
+          <li>
+            <code>getDate(id)</code> — a convenience that returns a{" "}
+            <code>Date</code> (or <code>undefined</code>) instead of a raw
+            number.
+          </li>
+        </ul>
+        <CodeSample ts={readingTs} js={readingJs} />
+        <CodeBlock code={readingSig} />
 
         <h2>Configuring</h2>
         <p>
@@ -247,6 +305,16 @@ export default function SortableIdPage() {
             </Link>{" "}
             work on sortable IDs unchanged — the format is still{" "}
             <code>prefix_body</code>.
+          </li>
+          <li>
+            <code>getTimestamp</code>, <code>getTimestampOrThrow</code>, and{" "}
+            <code>getDate</code> decode the leading timestamp field; they
+            can&apos;t verify that a value was actually produced by{" "}
+            <code>sortableId</code> (any ID with a long-enough body decodes to{" "}
+            <em>some</em> time). Call them on values you already know are
+            sortable — there is deliberately no <code>isSortableId</code>,
+            because the format carries no marker that would make such a check
+            reliable.
           </li>
           <li>
             For case-insensitive, unambiguous ids (ULID-style), pass the

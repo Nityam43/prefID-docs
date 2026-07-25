@@ -5,11 +5,18 @@ import { PageHeader } from "@/components/PageHeader";
 
 export const metadata = { title: "isId() & getPrefix()" };
 
-const isIdSig = `function isId<P extends string>(
+const isIdSig = `// Default separator — narrows to \`\${P}_\${string}\`:
+function isId<P extends string>(
   value: unknown,
   prefix: P,
-  separator?: string // default: "_"
-): value is \`\${P}_\${string}\``;
+): value is \`\${P}_\${string}\`;
+
+// Custom separator — narrows to \`\${P}\${S}\${string}\`:
+function isId<P extends string, S extends string>(
+  value: unknown,
+  prefix: P,
+  separator: S,
+): value is \`\${P}\${S}\${string}\`;`;
 
 const isIdUsageTs = `import { isId } from "prefid";
 
@@ -85,7 +92,10 @@ export default function ValidationPage() {
         <p>
           Both helpers accept an optional <code>separator</code> argument, so
           they work with generators configured to use something other than the
-          default underscore.
+          default underscore. When you pass one to <code>isId</code>, the
+          separator flows into the type it narrows to — so{" "}
+          <code>isId(value, &quot;user&quot;, &quot;-&quot;)</code> narrows to{" "}
+          <code>{"`user-${string}`"}</code>, not the underscore form.
         </p>
       </div>
 

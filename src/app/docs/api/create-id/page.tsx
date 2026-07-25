@@ -27,7 +27,8 @@ id("order"); // => "order_9f8e7d6c5b4a3F2e"`;
 
 const separator = `const id = createId({ separator: "-" });
 
-id("user"); // => "user-a1b2c3d4e5f6g7h8i9j0k1l2"`;
+id("user"); // => "user-a1b2c3d4e5f6g7h8i9j0k1l2"
+//  ^? type: \`user-\${string}\`  — the separator flows into the type`;
 
 const alphabet = `// Lowercase, unambiguous alphabet (no 0/O/1/l)
 const id = createId({ alphabet: "23456789abcdefghjkmnpqrstuvwxyz" });
@@ -116,6 +117,12 @@ export default function CreateIdPage() {
         <CodeSample ts={usageTs} js={usageJs} />
 
         <h2>Custom separator</h2>
+        <p>
+          The separator you choose is carried through to the value&apos;s type,
+          so a <code>&quot;-&quot;</code>-separated ID is typed{" "}
+          <code>{"`${P}-${string}`"}</code> and stays distinct from an
+          underscore one at compile time.
+        </p>
         <CodeBlock code={separator} />
 
         <h2>Custom alphabet</h2>
