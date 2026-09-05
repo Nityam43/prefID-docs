@@ -21,7 +21,10 @@ export const nav: NavGroup[] = [
       { title: "sortableId()", href: "/docs/api/sortable-id" },
       { title: "template()", href: "/docs/api/template" },
       { title: "ensureUnique()", href: "/docs/api/ensure-unique" },
-      { title: "isId() & getPrefix()", href: "/docs/api/validation" },
+      {
+        title: "isId(), getPrefix() & parseId()",
+        href: "/docs/api/validation",
+      },
       { title: "Types", href: "/docs/api/types" },
     ],
   },

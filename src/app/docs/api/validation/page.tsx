@@ -3,7 +3,7 @@ import { CodeSample } from "@/components/CodeSample";
 import { DocsPager } from "@/components/DocsPager";
 import { PageHeader } from "@/components/PageHeader";
 
-export const metadata = { title: "isId() & getPrefix()" };
+export const metadata = { title: "isId(), getPrefix() & parseId()" };
 
 const isIdSig = `// Default separator — narrows to \`\${P}_\${string}\`:
 function isId<P extends string>(
@@ -61,12 +61,34 @@ getPrefix("user_a1b2c3");  // => "user"
 getPrefix("order_9f8e7d"); // => "order"
 getPrefix("no-separator"); // => undefined`;
 
+const parseIdUsageTs = `import { parseId } from "prefid";
+
+const myId = "user_wLCFZ7EEjBYFmsbnthUkGspX";
+const parsed = parseId(myId);
+
+if (parsed) {
+  console.log(parsed.prefix); // "user"
+  console.log(parsed.id);     // "wLCFZ7EEjBYFmsbnthUkGspX"
+}
+
+// Fails safely on invalid inputs
+console.log(parseId("nosep")); // undefined
+console.log(parseId("user_")); // undefined`;
+
+const parseIdUsageJs = `const { parseId } = require("prefid");
+
+const myId = "evt_00VUDe8n8qKHoKl0tXbtTK56E";
+const parsed = parseId(myId);
+
+console.log(parsed?.prefix); // "evt"
+console.log(parsed?.id);     // "00VUDe8n8qKHoKl0tXbtTK56E"`;
+
 export default function ValidationPage() {
   return (
     <>
       <PageHeader
-        title="isId() & getPrefix()"
-        lead="Helpers to check whether a value is a given kind of ID, and to read the prefix back out."
+        title="isId(), getPrefix() & parseId()"
+        lead="Helpers to check whether a value is a given kind of ID, read the prefix, or parse both components."
       />
 
       <div className="prose-doc">
@@ -87,6 +109,14 @@ export default function ValidationPage() {
         </p>
         <CodeBlock code={getPrefixSig} />
         <CodeSample ts={getPrefixUsageTs} js={getPrefixUsageJs} />
+
+        <h2>parseId()</h2>
+        <p>
+          <code>parseId</code> allows you to safely decompose a generated ID
+          back into its original prefix and randomized body. If the string
+          provided is not a valid ID, it safely returns <code>undefined</code>.
+        </p>
+        <CodeSample ts={parseIdUsageTs} js={parseIdUsageJs} />
 
         <h2>Custom separators</h2>
         <p>
