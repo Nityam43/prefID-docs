@@ -112,15 +112,17 @@ export default function ValidationPage() {
 
         <h2>parseId()</h2>
         <p>
-          <code>parseId</code> allows you to safely decompose a generated ID
-          back into its original prefix and randomized body. If the string
-          provided is not a valid ID, it safely returns <code>undefined</code>.
+          <code>parseId</code> decomposes a generated ID back into its prefix
+          and body. It returns <code>undefined</code> when the value is not a
+          string, has no separator, or has an empty body. Like{" "}
+          <code>isId</code>, it does not validate the body&apos;s contents — a
+          value such as <code>&quot;user_@@@&quot;</code> still parses.
         </p>
         <CodeSample ts={parseIdUsageTs} js={parseIdUsageJs} />
 
         <h2>Custom separators</h2>
         <p>
-          Both helpers accept an optional <code>separator</code> argument, so
+          All three helpers accept an optional <code>separator</code> argument, so
           they work with generators configured to use something other than the
           default underscore. When you pass one to <code>isId</code>, the
           separator flows into the type it narrows to — so{" "}
